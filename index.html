@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Qué tantas veces se ha dicho</title>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;0,900;1,400&family=Jost:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#f4efe6;--ink:#111;--accent:#d3281e;--rule:#111;--muted:#6b655a;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root{--paper:#15130f;--ink:#f1ece0;--rule:#f1ece0;--muted:#a39d90;--accent:#ff5a48}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:'Jost','Futura','Helvetica Neue',Arial,sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding:18px 20px 60px}
+.top{display:flex;justify-content:space-between;font-size:11px;letter-spacing:.22em;text-transform:uppercase;border-bottom:1px solid var(--rule);padding-bottom:8px}
+h1{font-family:'Bodoni Moda','Didot','Bodoni 72',Georgia,serif;font-weight:900;font-size:clamp(54px,15vw,120px);line-height:.88;letter-spacing:-.035em;margin:22px 0 10px;text-transform:uppercase}
+h1 em{display:block;font-weight:400;font-style:italic;text-transform:none;color:var(--accent);letter-spacing:-.02em}
+.sub{display:flex;justify-content:space-between;gap:12px;border-top:3px solid var(--rule);border-bottom:1px solid var(--rule);padding:8px 0;font-size:11px;letter-spacing:.2em;text-transform:uppercase;margin-bottom:8px}
+.status{font-size:12px;color:var(--muted);letter-spacing:.08em;min-height:18px;margin:6px 0 14px}
+.item{display:grid;grid-template-columns:auto 1fr auto;gap:6px 16px;align-items:center;padding:18px 0;border-bottom:1px solid var(--rule)}
+.num{font-family:'Bodoni Moda',Georgia,serif;font-size:44px;font-weight:400;color:var(--accent);line-height:1;grid-row:span 3}
+.who{font-size:11px;letter-spacing:.28em;text-transform:uppercase;font-weight:500}
+.say{font-family:'Bodoni Moda',Georgia,serif;font-style:italic;font-size:clamp(18px,4.6vw,24px);line-height:1.2;grid-column:2}
+.count{font-family:'Bodoni Moda',Georgia,serif;font-weight:900;font-size:clamp(46px,12vw,72px);line-height:1;text-align:right;grid-row:span 2;grid-column:3;min-width:1.4ch}
+.ctl{display:flex;gap:8px;justify-content:flex-end;grid-column:3;grid-row:3;margin-top:4px}
+button{font:500 13px 'Jost',Arial,sans-serif;letter-spacing:.14em;background:transparent;color:var(--ink);border:1px solid var(--rule);width:56px;height:36px;cursor:pointer}
+button.plus{background:var(--ink);color:var(--paper)}
+button:hover:not(:disabled){background:var(--accent);border-color:var(--accent);color:#fff}
+button:disabled{opacity:.3;cursor:default}
+.foot{margin-top:26px;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);text-align:center}
+@media(max-width:520px){.item{grid-template-columns:auto 1fr}.count{grid-column:2;grid-row:auto;text-align:left}.ctl{grid-column:2;grid-row:auto;justify-content:flex-start}.num{grid-row:span 4}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><span>N.&nbsp;07</span><span>Edizione speciale</span><span>Lire 5.000</span></div>
+  <h1>Qué tantas <em>veces se ha dicho</em></h1>
+  <div class="sub"><span>Il contatore del gruppo</span><span>Sempre in aumento</span></div>
+  <div class="status" id="status">Cargando…</div>
+  <div id="list"></div>
+  <div class="foot">Xorgía</div>
+</div>
+<script>
+const SB_URL='https://ftbatpyfgkratbrolwud.supabase.co';
+const SB_KEY='sb_publishable_2UtRLPnPcIOcZuZjBnjtFw_imS49apk';
+const H={'apikey':SB_KEY,'Content-Type':'application/json'};
+const OPTS=[
+ ["Hiram","Esta vez sí me pongo a dieta"],
+ ["Angel","Ya voy a dejar de gastar tanto"],
+ ["Angel","Ya voy a dejar de tomar tanto"],
+ ["Mario","Estoy regresando al gimnasio y ahora le pondré ganas"],
+ ["Roberto","Cambia de carro"],
+ ["Nacho","Menciona a un lolcow"],
+ ["Carlos","Dice “tengo que dejar de jugar tanto ‘x’ cosa”"]
+];
+let totals={},busy=false,loaded=false;
+const listEl=document.getElementById('list'),statusEl=document.getElementById('status');
+
+function render(){
+  listEl.innerHTML='';
+  OPTS.forEach((o,i)=>{
+    const id=i+1,t=totals[id]||0;
+    const d=document.createElement('div');d.className='item';
+    const n=document.createElement('div');n.className='num';n.textContent=id;
+    const w=document.createElement('div');w.className='who';w.textContent=o[0];
+    const s=document.createElement('div');s.className='say';s.textContent='“'+o[1]+'”';
+    const c=document.createElement('div');c.className='count';c.textContent=loaded?t:'–';
+    const ctl=document.createElement('div');ctl.className='ctl';
+    const m=document.createElement('button');m.textContent='−1';m.disabled=!loaded||busy||t<=0;m.onclick=()=>bump(id,-1);
+    const p=document.createElement('button');p.className='plus';p.textContent='+1';p.disabled=!loaded||busy;p.onclick=()=>bump(id,1);
+    ctl.append(m,p);
+    d.append(n,w,c,s,ctl);
+    listEl.appendChild(d);
+  });
+}
+async function load(){
+  try{
+    const r=await fetch(SB_URL+'/rest/v1/counters?select=id,total',{headers:H});
+    if(!r.ok)throw new Error(r.status);
+    const rows=await r.json();
+    const t={};rows.forEach(x=>t[x.id]=x.total);
+    totals=t;loaded=true;statusEl.textContent='';
+    if(!busy)render();
+  }catch(e){statusEl.textContent='No se pudo cargar el contador.'}
+}
+async function bump(id,delta){
+  if(busy)return;
+  busy=true;render();
+  try{
+    const r=await fetch(SB_URL+'/rest/v1/rpc/sumar',{method:'POST',headers:H,body:JSON.stringify({opt:id,delta:delta})});
+    if(!r.ok)throw new Error(r.status);
+    totals[id]=await r.json();
+    statusEl.textContent='';
+  }catch(e){statusEl.textContent='No se pudo guardar. Intenta de nuevo.'}
+  busy=false;render();
+}
+render();load();
+setInterval(()=>{if(!busy&&!document.hidden)load()},8000);
+</script>
+</body>
+</html>
